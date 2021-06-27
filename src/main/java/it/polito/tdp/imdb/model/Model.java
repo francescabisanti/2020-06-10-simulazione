@@ -1,5 +1,6 @@
 package it.polito.tdp.imdb.model;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -18,72 +19,71 @@ import it.polito.tdp.imdb.db.ImdbDAO;
 
 public class Model {
 	ImdbDAO dao;
-	SimpleWeightedGraph <Actor, DefaultWeightedEdge> grafo;
 	Map <Integer, Actor> idMap;
+	SimpleWeightedGraph <Actor, DefaultWeightedEdge> grafo;
 	public Model() {
 		dao= new ImdbDAO();
-		idMap= new HashMap <Integer, Actor>();
+		idMap= new HashMap<>();
 		dao.listAllActors(idMap);
 	}
 	
-	public List<String> listAllGenres(){
-		return dao.listAllGenres();
-	}
 	
 	public void creaGrafo(String genere) {
 		grafo= new SimpleWeightedGraph <Actor, DefaultWeightedEdge>(DefaultWeightedEdge.class);
-		Graphs.addAllVertices(this.grafo, dao.getVertici(genere, idMap));
-		for(Adiacenza a: dao.getAdiacenze(genere, idMap)) {
-			if(grafo.containsVertex(a.getA1())&& grafo.containsVertex(a.getA2())) {
+		Graphs.addAllVertices(this.grafo, dao.getVertici(idMap, genere));
+		for(Adiacenza a: dao.getAdiacenza(idMap, genere)) {
+			if(grafo.containsVertex(a.getA1())&&grafo.containsVertex(a.getA2())) {
 				Graphs.addEdge(this.grafo, a.getA1(), a.getA2(), a.getPeso());
 			}
 		}
 	
 	}
-	
-	public int getNVertici() {
-		return this.grafo.vertexSet().size();
+	public String simula(int giorni) {
+		Simulatore sim= new Simulatore(this, this.grafo);
+		sim.init(giorni);
+		sim.run();
+		String result="Attori intervistati: \n";
+		for(Actor a: sim.getIntervistati()) {
+			result= result+a.toString()+"\n";
+			
+		}
+		result=result+"Numero giorni di pausa: "+sim.getPause();
+		return result;
 	}
-	public int getNArchi() {
-		return this.grafo.edgeSet().size();
-	}
-
 	public ImdbDAO getDao() {
 		return dao;
 	}
+
+
+	public Map<Integer, Actor> getIdMap() {
+		return idMap;
+	}
+
 
 	public SimpleWeightedGraph<Actor, DefaultWeightedEdge> getGrafo() {
 		return grafo;
 	}
 
-	public Map<Integer, Actor> getIdMap() {
-		return idMap;
-	}
-	
-	public List <Actor> trovaRaggiungibili (Actor partenza){
-		List <Actor> percorso= new LinkedList <Actor>();
-		
-		BreadthFirstIterator <Actor, DefaultWeightedEdge> bfv= new BreadthFirstIterator <Actor, DefaultWeightedEdge>(this.grafo, partenza);
+
+	public List <Actor> raggiungibili (Actor selezionato){
+		List<Actor> raggiungibili= new ArrayList<>();
+		BreadthFirstIterator <Actor, DefaultWeightedEdge> bfv= new BreadthFirstIterator<Actor, DefaultWeightedEdge>(grafo, selezionato);
 		while(bfv.hasNext()) {
-			Actor c= bfv.next();
-			if(!c.equals(partenza))
-				percorso.add(c);
+			raggiungibili.add(bfv.next());
 		}
-		Collections.sort(percorso);
-		return percorso;
+		Collections.sort(raggiungibili);
+		return raggiungibili;
 	}
 	
-	public String Simula(Integer N, String genere, Map <Integer, Actor>idMap) {
-		Simulatore sim= new Simulatore(grafo, this);
-		sim.init(N, genere, idMap);
-		sim.run();
-		String messaggio="Sono stati intervistati questi attori: \n";
-		for(Actor a: sim.getIntervistati()) {
-			messaggio= messaggio+a.toString()+"\n";
-		}
-		messaggio=messaggio+" con un totale di"+ sim.getGiorniPausa()+" giorni di Pausa";
-		return messaggio;
-		
+	public int getNVertici() {
+		return grafo.vertexSet().size();
+	}
+	public int getNArchi() {
+		return grafo.edgeSet().size();
+	}
+	
+	public List <String> getGeneri(){
+		return dao.getGeneri();
 	}
 
 }

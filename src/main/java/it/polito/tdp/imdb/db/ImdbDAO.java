@@ -87,11 +87,10 @@ public class ImdbDAO {
 			return null;
 		}
 	}
-	
-	public List<String> listAllGenres(){
-		String sql = "SELECT DISTINCT g.genre AS gen "
-				+ "FROM movies_genres g "
-				+ "ORDER BY gen ASC ";
+	public List <String> getGeneri(){
+		String sql="SELECT DISTINCT mg.genre AS id "
+				+ "FROM movies_genres mg "
+				+ "ORDER BY mg.genre ASC";
 		List<String> result = new ArrayList<String>();
 		Connection conn = DBConnect.getConnection();
 
@@ -100,8 +99,8 @@ public class ImdbDAO {
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
 
-				String genere=res.getString("gen");
-				result.add(genere);
+				
+				result.add(res.getString("id"));
 			}
 			conn.close();
 			return result;
@@ -112,11 +111,11 @@ public class ImdbDAO {
 		}
 	}
 	
-	public List<Actor> getVertici(String genere, Map <Integer, Actor> idMap){
+	public List<Actor> getVertici(Map<Integer, Actor> idMap, String genere){
 		String sql = "SELECT DISTINCT r.actor_id AS id "
-				+ "FROM roles r, movies m, movies_genres mg "
-				+ "WHERE r.movie_id=m.id AND m.id=mg.movie_id AND mg.genre=? "
-				+ "ORDER BY r.actor_id ASC ";
+				+ "FROM movies_genres mg, movies m, roles r "
+				+ "WHERE r.movie_id= m.id AND m.id= mg.movie_id AND mg.genre=? "
+				+"ORDER BY r.actor_id ASC ";
 		List<Actor> result = new ArrayList<Actor>();
 		Connection conn = DBConnect.getConnection();
 
@@ -125,10 +124,11 @@ public class ImdbDAO {
 			st.setString(1, genere);
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
+
 				Actor a= idMap.get(res.getInt("id"));
-				if(a!=null)
+				if(a!=null) {
 					result.add(a);
-				
+				}
 			}
 			conn.close();
 			return result;
@@ -137,15 +137,17 @@ public class ImdbDAO {
 			e.printStackTrace();
 			return null;
 		}
-	}
+	} 
 	
 	
-	public List<Adiacenza> getAdiacenze(String genere, Map <Integer, Actor> idMap){
-		String sql = "SELECT DISTINCT r1.actor_id AS id1, r2.actor_id AS id2, COUNT(*) AS peso "
-				+ "FROM roles r1, roles r2, movies_genres mg "
-				+ "WHERE r1.movie_id=mg.movie_id AND r2.movie_id= mg.movie_id AND mg.genre=? "
-				+ "AND r1.actor_id> r2.actor_id "
-				+ "GROUP BY r1.actor_id, r2.actor_id ";
+	
+	public List<Adiacenza> getAdiacenza(Map<Integer, Actor> idMap, String genere){
+		String sql = "SELECT r1.actor_id AS aa1, r2.actor_id AS aa2, COUNT(*) AS peso "
+				+ "FROM movies_genres mg, movies m, roles r1, roles r2 "
+				+ "WHERE r1.actor_id> r2.actor_id AND r1.movie_id= r2.movie_id AND "
+				+ "r1.movie_id= m.id AND r2.movie_id= m.id AND m.id= mg.movie_id AND mg.genre=? "
+				+ "GROUP BY r1.actor_id, r2.actor_id "
+				+ "HAVING peso>0";
 		List<Adiacenza> result = new ArrayList<Adiacenza>();
 		Connection conn = DBConnect.getConnection();
 
@@ -154,13 +156,13 @@ public class ImdbDAO {
 			st.setString(1, genere);
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
-				Actor a1= idMap.get(res.getInt("id1"));
-				Actor a2= idMap.get(res.getInt("id2"));
-				Double peso= res.getDouble("peso");
-				Adiacenza a = new Adiacenza(a1,a2,peso);
-				result.add(a);
-				
-					
+
+				Actor a1= idMap.get(res.getInt("aa1"));
+				Actor a2= idMap.get(res.getInt("aa2"));
+				if(a1!=null && a2!=null) {
+					Adiacenza a= new Adiacenza(a1,a2, res.getDouble("peso"));
+					result.add(a);
+				}
 			}
 			conn.close();
 			return result;
@@ -169,7 +171,8 @@ public class ImdbDAO {
 			e.printStackTrace();
 			return null;
 		}
-	}
+	} 
+	
 	
 	
 	

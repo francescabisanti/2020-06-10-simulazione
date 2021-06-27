@@ -54,51 +54,52 @@ public class FXMLController {
     @FXML
     void doAttoriSimili(ActionEvent event) {
     	this.txtResult.clear();
-    	Actor partenza= this.boxAttore.getValue();
-    	if(partenza==null) {
-    		this.txtResult.appendText("Seleziona un attore dalla tendina!");
+    	if(model.getGrafo()==null) {
+    		this.txtResult.setText("Crea prima il grafo");
     		return;
     	}
-    	List <Actor> percorso=model.trovaRaggiungibili(partenza);
-    	this.txtResult.appendText("A partire da "+partenza+" posso raggiungere: \n");
-    	for(Actor a : percorso) {
-    		this.txtResult.appendText(a.toString()+"\n");
+    	Actor a= this.boxAttore.getValue();
+    	List<Actor> result= model.raggiungibili(a);
+    	this.txtResult.appendText("ATTORI SIMILI A: "+a.toString()+":\n");
+    	for(Actor aa: result) {
+    		this.txtResult.appendText(aa.toString()+"\n");
     	}
-    	
 
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
     	this.txtResult.clear();
-    	this.txtResult.appendText("Grafo creato!\n");
     	String genere= this.boxGenere.getValue();
+    	if(genere==null) {
+    		this.txtResult.setText("Seleziona un genere");
+    		return;
+    	}
     	this.model.creaGrafo(genere);
-    	this.txtResult.appendText("#Vertici: "+this.model.getNVertici()+"\n");
-    	this.txtResult.appendText("#Archi: "+this.model.getNArchi()+"\n");
-    	this.boxAttore.getItems().clear();
+    	this.txtResult.appendText("Grafo creato!\n");
+    	this.txtResult.appendText("#VERTICI: "+this.model.getNVertici()+"\n");
+    	this.txtResult.appendText("#ARCHI: "+this.model.getNArchi()+"\n");
     	this.boxAttore.getItems().addAll(model.getGrafo().vertexSet());
-    	
     }
 
     @FXML
     void doSimulazione(ActionEvent event) {
     	this.txtResult.clear();
-    	String genere= this.boxGenere.getValue();
-    	String giorni= this.txtGiorni.getText();
-    	int g;
+    	String gS= this.txtGiorni.getText();
+    	int giorni;
     	try {
-    		g=Integer.parseInt(giorni);
+    		giorni= Integer.parseInt(gS);
     		
-    	}catch(NumberFormatException e ) {
-    		this.txtResult.appendText("Seleziona un numero di giorni valido!");
+    	}catch(NumberFormatException e) {
+    		this.txtResult.setText("Inserisci un numero di giorni valido");
     		return;
     	}
-    	String messaggio=model.Simula(g, genere, model.getIdMap());
-    	this.txtResult.appendText(messaggio);
+    	if(this.model.getGrafo()==null) {
+    		this.txtResult.setText("Crea prima il grafo");
+    		return;
+    	}
     	
-    	
-
+    	this.txtResult.appendText(model.simula(giorni));
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -115,7 +116,7 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
-    	this.boxGenere.getItems().addAll(model.listAllGenres());
+    	this.boxGenere.getItems().addAll(model.getGeneri());
     	
     	
     }
